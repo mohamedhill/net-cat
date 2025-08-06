@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -13,13 +15,32 @@ type Client struct {
 	Name string
 }
 
+var (
+	clients    = make(map[net.Conn]Client)
+	clientsMu  sync.Mutex
+	messageLog []string      
+	logMu      sync.Mutex    
+)
+
 func main() {
-	ln, err := net.Listen("tcp", ":8080")
+   adrr := ""
+	if len(os.Args) == 1 {
+		adrr = ":8989"
+	}else if len(os.Args)==2{
+		adrr = ":"+os.Args[1]
+		
+	}else{
+		fmt.Println("[USAGE]: ./TCPChat $port")
+		return
+	}
+	//args := os.Args[1:]
+	ln, err := net.Listen("tcp", adrr)
 	if err != nil {
 		fmt.Println("error", err)
+		return
 	}
 	defer ln.Close()
-	fmt.Println("the server is running")
+	fmt.Printf("Listening on the port %s",adrr)
 
 	for {
 		conn, err := ln.Accept()
@@ -27,20 +48,34 @@ func main() {
 			fmt.Println("Accept error", err)
 			continue
 		}
-		go handleconnection(conn)
+		go handleConnection(conn)
 	}
 }
 
-func handleconnection(conn net.Conn) {
+func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
 	name, err := getClientName(conn)
 	if err != nil {
-		fmt.Println("Invalid name, disconnecting client.")
+		fmt.Println("Invalid name. Disconnecting client.")
 		return
 	}
 
-	fmt.Println(time.Now(), "User name is:", name)
+	client := Client{Conn: conn, Name: name}
+
+
+	clientsMu.Lock()
+	clients[conn] = client
+	clientsMu.Unlock()
+
+	sendHistory(conn)
+
+
+	joinMsg := fmt.Sprintf("%s has joined our chat...", name)
+	broadcast(joinMsg, conn)
+	addToHistory(joinMsg)
+
+	fmt.Println(time.Now().Format("2006-01-02 15:04:05"), "User connected:", name)
 
 	reader := bufio.NewReader(conn)
 
@@ -48,45 +83,73 @@ func handleconnection(conn net.Conn) {
 		message, err := reader.ReadString('\n')
 		if err != nil {
 			fmt.Printf("Client %s disconnected: %v\n", name, err)
+
+			clientsMu.Lock()
+			delete(clients, conn)
+			clientsMu.Unlock()
+
+			leaveMsg := fmt.Sprintf("%s has left our chat...", name)
+			broadcast(leaveMsg, conn)
+			addToHistory(leaveMsg)
 			return
 		}
 
 		message = strings.TrimSpace(message)
-		if message == "" {
-			continue 
-		}
-
 		formatted := fmt.Sprintf("[%s][%s]: %s",
 			time.Now().Format("2006-01-02 15:04:05"),
-			name, message,
-		)
+			name,
+			message)
 
-		fmt.Println(formatted)
+		addToHistory(formatted)
+		broadcast(formatted, nil)
+	}
+}
 
-		
-		_, err = conn.Write([]byte(formatted + "\n"))
-		if err != nil {
-			fmt.Println("Error writing to client:", err)
-			return
+
+func sendHistory(conn net.Conn) {
+	logMu.Lock()
+	defer logMu.Unlock()
+	for _, msg := range messageLog {
+		conn.Write([]byte(msg + "\n"))
+	}
+}
+
+func addToHistory(msg string) {
+	logMu.Lock()
+	defer logMu.Unlock()
+	messageLog = append(messageLog, msg)
+}
+
+
+func broadcast(message string, excludeConn net.Conn) {
+	clientsMu.Lock()
+	defer clientsMu.Unlock()
+
+	for conn := range clients {
+		if conn != excludeConn {
+			conn.Write([]byte(message + "\n"))
 		}
 	}
 }
 
-const Name = "[ENTER YOUR NAME]:"
+
+func peng()[]byte{
+hellomsg ,err:= os.ReadFile("peng.txt")
+if err != nil{
+	return []byte("erorr read peng")
+}
+return hellomsg
+}
+
 func getClientName(conn net.Conn) (string, error) {
-	conn.Write([]byte(Name))
+	hellomsg := peng()
+	conn.Write(hellomsg)
 	reader := bufio.NewReader(conn)
 	name, err := reader.ReadString('\n')
 	if err != nil {
 		return "", err
 	}
-
 	name = strings.TrimSpace(name)
-	if name == "" {
-		conn.Write([]byte("Name cannot be empty. Goodbye!\n"))
-		conn.Close()
-		return "", fmt.Errorf("empty name")
-	}
-
+	
 	return name, nil
 }
