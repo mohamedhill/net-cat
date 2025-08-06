@@ -1,11 +1,14 @@
 package netc
-import ("net"
-"sync"
-"fmt"
-"time"
-"strings"
-"bufio"
+
+import (
+	"bufio"
+	"fmt"
+	"net"
+	"strings"
+	"sync"
+	"time"
 )
+
 type Client struct {
 	Conn net.Conn
 	Name string
@@ -14,11 +17,9 @@ type Client struct {
 var (
 	clients    = make(map[net.Conn]Client)
 	clientsMu  sync.Mutex
-	messageLog []string      
-	logMu      sync.Mutex    
+	messageLog []string
+	logMu      sync.Mutex
 )
-
-
 
 func HandleConnection(conn net.Conn) {
 	defer conn.Close()
@@ -29,15 +30,19 @@ func HandleConnection(conn net.Conn) {
 		return
 	}
 
+	clientsMu.Lock()
+	if len(clients) >= 10 {
+		clientsMu.Unlock()
+		conn.Write([]byte("Server full. Try again later.\n"))
+		return
+	}
+
 	client := Client{Conn: conn, Name: name}
 
-
-	clientsMu.Lock()
 	clients[conn] = client
 	clientsMu.Unlock()
 
 	sendHistory(conn)
-
 
 	joinMsg := fmt.Sprintf("%s has joined our chat...", name)
 	broadcast(joinMsg, conn)
