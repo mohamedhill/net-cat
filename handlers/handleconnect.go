@@ -46,13 +46,25 @@ func HandleConnection(conn net.Conn) {
 
 	joinMsg := fmt.Sprintf("%s has joined our chat...", name)
 	broadcast(joinMsg, conn)
-	addToHistory(joinMsg)
+	if len(joinMsg)>0{
+
+		formatted1 := fmt.Sprintf("[%s][%s]:",
+			time.Now().Format("2006-01-02 15:04:05"),
+			name)
+		broadcast2(formatted1, conn)
+	}
+
+	// addToHistory(joinMsg)
 
 	fmt.Println(time.Now().Format("2006-01-02 15:04:05"), "User connected:", name)
 
 	reader := bufio.NewReader(conn)
 
 	for {
+		formatted1 := fmt.Sprintf("[%s][%s]:",
+			time.Now().Format("2006-01-02 15:04:05"),
+			name)
+		conn.Write([]byte(formatted1))
 		message, err := reader.ReadString('\n')
 		if err != nil {
 			fmt.Printf("Client %s disconnected: %v\n", name, err)
@@ -63,7 +75,15 @@ func HandleConnection(conn net.Conn) {
 
 			leaveMsg := fmt.Sprintf("%s has left our chat...", name)
 			broadcast(leaveMsg, conn)
-			addToHistory(leaveMsg)
+			if len(leaveMsg)>0{
+
+				formatted1 := fmt.Sprintf("[%s][%s]:",
+					time.Now().Format("2006-01-02 15:04:05"),
+					name)
+				broadcast2(formatted1, conn)
+			}
+
+			// addToHistory(leaveMsg)
 			return
 		}
 
@@ -74,6 +94,6 @@ func HandleConnection(conn net.Conn) {
 			message)
 
 		addToHistory(formatted)
-		broadcast(formatted, nil)
+		broadcast(formatted, conn)
 	}
 }

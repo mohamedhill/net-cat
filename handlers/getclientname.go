@@ -19,6 +19,12 @@ func getClientName(conn net.Conn) (string, error) {
 		}
 
 		name = strings.TrimSpace(name)
+		booln := isnameexist(name)
+		if !booln{
+			conn.Write([]byte("this name is exist .\n"))
+			conn.Write([]byte("[ENTER YOUR NAME]:"))
+			continue
+		} 
 
 		if name == "" {
 			conn.Write([]byte("Name cannot be empty.\n"))
@@ -28,4 +34,14 @@ func getClientName(conn net.Conn) (string, error) {
 
 		return name, nil
 	}
+}
+
+func isnameexist(name string)bool{
+for _,k:=range  clients{
+if name == k.Name{
+	return false 
+}
+	
+}
+return true
 }
