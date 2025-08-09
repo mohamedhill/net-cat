@@ -9,13 +9,9 @@ import (
 	"time"
 )
 
-type Client struct {
-	Conn net.Conn
-	Name string
-}
 
 var (
-	clients    = make(map[net.Conn]Client)
+	clients    = make(map[net.Conn]string)
 	clientsMu  sync.Mutex
 	messageLog []string
 	logMu      sync.Mutex
@@ -37,53 +33,36 @@ func HandleConnection(conn net.Conn) {
 		return
 	}
 
-	client := Client{Conn: conn, Name: name}
+	
 
-	clients[conn] = client
+	clients[conn] = name 
+
 	clientsMu.Unlock()
 
 	sendHistory(conn)
+	//propmt()
 
-	joinMsg := fmt.Sprintf("%s has joined our chat...", name)
-	broadcast(joinMsg, conn)
-	if len(joinMsg)>0{
+	joinMsg := fmt.Sprintf("✅ %s has joined our chat...", name)
+	broadcast2(joinMsg, conn)
 
-		formatted1 := fmt.Sprintf("[%s][%s]:",
-			time.Now().Format("2006-01-02 15:04:05"),
-			name)
-		broadcast2(formatted1, conn)
-	}
 
-	// addToHistory(joinMsg)
-
-	fmt.Println(time.Now().Format("2006-01-02 15:04:05"), "User connected:", name)
+	fmt.Println(time.Now().Format("2006-01-02 15:04:05"), "✅ User connected:", name)
 
 	reader := bufio.NewReader(conn)
 
 	for {
-		formatted1 := fmt.Sprintf("[%s][%s]:",
-			time.Now().Format("2006-01-02 15:04:05"),
-			name)
-		conn.Write([]byte(formatted1))
+		propmt()
 		message, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Printf("Client %s disconnected: %v\n", name, err)
+			fmt.Printf("🔴 Client %s disconnected: %v\n", name, err)
 
 			clientsMu.Lock()
 			delete(clients, conn)
 			clientsMu.Unlock()
 
-			leaveMsg := fmt.Sprintf("%s has left our chat...", name)
-			broadcast(leaveMsg, conn)
-			if len(leaveMsg)>0{
-
-				formatted1 := fmt.Sprintf("[%s][%s]:",
-					time.Now().Format("2006-01-02 15:04:05"),
-					name)
-				broadcast2(formatted1, conn)
-			}
-
-			// addToHistory(leaveMsg)
+			leaveMsg := fmt.Sprintf("🔴 %s has left our chat...", name)
+			broadcast2(leaveMsg, conn)
+			//propmt()
 			return
 		}
 
@@ -94,6 +73,8 @@ func HandleConnection(conn net.Conn) {
 			message)
 
 		addToHistory(formatted)
-		broadcast(formatted, conn)
+		broadcast(formatted, conn,name)
+		//propmt()
+		/* broadcast2(formatted1,conn) */
 	}
 }
