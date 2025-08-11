@@ -20,7 +20,7 @@ func getClientName(conn net.Conn) (string, error) {
 
 		name = strings.TrimSpace(name)
 		booln := isnameexist(name)
-		bool2 := validname(name)
+		 bool2 := validname(name)
 
 		if !booln {
 			conn.Write([]byte("this name is exist .\n"))
@@ -44,6 +44,8 @@ func getClientName(conn net.Conn) (string, error) {
 }
 
 func isnameexist(name string) bool {
+	clientsMu.Lock()
+	defer clientsMu.Unlock()
 	for _, k := range clients {
 		if name == k {
 			return false
@@ -53,10 +55,50 @@ func isnameexist(name string) bool {
 }
 
 func validname(name string) bool {
-	for i := range name {
-		if i >=32 && i <= 126 {
+	if len(name) == 0||len(name)>20{
+		return false
+	}
+	for _,i:= range name{
+		if (i >= 'a'&& i <='z')||(i >= 'A'&& i <='Z')||(i >= '0'&& i <='9'){
 			return true
 		}
 	}
+		
 	return false
+	}
+
+
+func changeClientName(conn net.Conn) (string, error) {
+	conn.Write([]byte("[ENTER YOUR NEW NAME]:"))
+	reader := bufio.NewReader(conn)
+
+	for {
+		name, err := reader.ReadString('\n')
+		if err != nil {
+			return "", err
+		}
+
+		name = strings.TrimSpace(name)
+		booln := isnameexist(name)
+		 bool2 := validname(name)
+
+		if !booln {
+			conn.Write([]byte("this name is exist .\n"))
+			conn.Write([]byte("[ENTER YOUR NEW NAME]:"))
+			continue
+		}
+		 if !bool2 {
+			conn.Write([]byte("this is not valid name.\n"))
+			conn.Write([]byte("[ENTER YOUR NAME]:"))
+			continue
+		} 
+
+		if name == "" {
+			conn.Write([]byte("Name cannot be empty.\n"))
+			conn.Write([]byte("[ENTER YOUR NEW NAME]:"))
+			continue
+		}
+
+		return name, nil
+	}
 }
