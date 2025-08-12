@@ -20,7 +20,7 @@ func getClientName(conn net.Conn) (string, error) {
 
 		name = strings.TrimSpace(name)
 		booln := isnameexist(name)
-		 bool2 := validname(name)
+		bool2 := validname(name)
 
 		if !booln {
 			conn.Write([]byte("this name is exist .\n"))
@@ -55,18 +55,17 @@ func isnameexist(name string) bool {
 }
 
 func validname(name string) bool {
-	if len(name) == 0||len(name)>20{
+	if len(name) == 0 || len(name) > 20 {
 		return false
 	}
-	for _,i:= range name{
-		if (i >= 'a'&& i <='z')||(i >= 'A'&& i <='Z')||(i >= '0'&& i <='9'){
-			return true
+	for _, i := range name {
+		if i < 32 || i > 126 {
+			return false
 		}
 	}
-		
-	return false
-	}
 
+	return true
+}
 
 func changeClientName(conn net.Conn) (string, error) {
 	conn.Write([]byte("[ENTER YOUR NEW NAME]:"))
@@ -80,18 +79,18 @@ func changeClientName(conn net.Conn) (string, error) {
 
 		name = strings.TrimSpace(name)
 		booln := isnameexist(name)
-		 bool2 := validname(name)
+		bool2 := validname(name)
 
 		if !booln {
 			conn.Write([]byte("this name is exist .\n"))
 			conn.Write([]byte("[ENTER YOUR NEW NAME]:"))
 			continue
 		}
-		 if !bool2 {
+		if !bool2 {
 			conn.Write([]byte("this is not valid name.\n"))
 			conn.Write([]byte("[ENTER YOUR NAME]:"))
 			continue
-		} 
+		}
 
 		if name == "" {
 			conn.Write([]byte("Name cannot be empty.\n"))
@@ -101,4 +100,17 @@ func changeClientName(conn net.Conn) (string, error) {
 
 		return name, nil
 	}
+}
+
+func Isvalidmessage(msg string) bool {
+	/* if len(msg) < 0 {
+		return false
+	} */
+
+	for _, i := range msg {
+		if i < 32 || i > 126 {
+			return false
+		}
+	}
+	return true
 }

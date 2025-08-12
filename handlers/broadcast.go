@@ -6,13 +6,19 @@ import (
 	"time"
 )
 
-func broadcast(message string, excludeConn net.Conn) {
+func broadcast(message string, excludeConn net.Conn, flg bool) {
 	clientsMu.Lock()
 	defer clientsMu.Unlock()
 
 	for conn := range clients {
 		if conn != excludeConn {
-			conn.Write([]byte("\n" + message + "\n"))
+			if flg {
+				conn.Write([]byte(message))
+			}
+
+			if !flg {
+				conn.Write([]byte("\n" + message + "\n"))
+			}
 		}
 	}
 }

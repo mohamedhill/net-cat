@@ -18,6 +18,7 @@ var (
 
 func HandleConnection(conn net.Conn) {
 	defer conn.Close()
+	disconnect := false
 
 	name, err := getClientName(conn)
 	if err != nil {
@@ -42,10 +43,11 @@ func HandleConnection(conn net.Conn) {
 	sendHistory(conn)
 
 	joinMsg := fmt.Sprintf("✅ %s has joined our chat...", name)
-	broadcast(joinMsg, conn)
+	broadcast(joinMsg, conn, disconnect)
+	disconnect = true
 	logs(joinMsg + "\n")
 
-	fmt.Println(time.Now().Format("2006-01-02 15:04:05"), "✅ User connected:", name)
+	//fmt.Println(time.Now().Format("2006-01-02 15:04:05"), "✅ User connected:", name)
 
 	reader := bufio.NewReader(conn)
 
@@ -53,22 +55,26 @@ func HandleConnection(conn net.Conn) {
 	for {
 		if flag {
 			propmt()
+			disconnect = false
 		}
 		message, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Printf("🔴 Client %s disconnected: %v\n", name, err)
+			//fmt.Printf("🔴 Client %s disconnected: %v\n", name, err)
 
 			clientsMu.Lock()
 			delete(clients, conn)
 			clientsMu.Unlock()
 
 			leaveMsg := fmt.Sprintf("🔴 %s has left our chat...", name)
-			broadcast(leaveMsg, conn)
+			broadcast(leaveMsg, conn, disconnect)
+			propmt()
+			disconnect = true
 			logs(leaveMsg + "\n")
 			flag = true
 			return
 		}
 		message = strings.TrimSpace(message)
+
 		if message == "/name" {
 			correntname := name
 			newname, err := changeClientName(conn)
@@ -81,9 +87,11 @@ func HandleConnection(conn net.Conn) {
 			clientsMu.Unlock()
 			name = newname
 			changenameMsg := fmt.Sprintf("📝%s has change there name to: %s", correntname, newname)
-			broadcast(changenameMsg, conn)
+			broadcast(changenameMsg, conn, disconnect)
+			propmt()
+			disconnect = true
 			logs(changenameMsg + "\n")
-			flag = true
+			flag = false
 			continue
 
 		} else if message == "/members" {
@@ -96,7 +104,7 @@ func HandleConnection(conn net.Conn) {
 			flag = true
 		}
 
-		if message == "" {
+		if message == "" || !Isvalidmessage(message) {
 			flag = false
 			clientsMu.Lock()
 			clientName, ok := clients[conn]
@@ -118,7 +126,8 @@ func HandleConnection(conn net.Conn) {
 			message)
 
 		addToHistory(formatted)
-		broadcast(formatted, conn)
+		broadcast(formatted, conn, disconnect)
+		disconnect = false
 		logs(formatted + "\n")
 		flag = true
 
