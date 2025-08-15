@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 )
-
+// the main function to handle client name validity
 func getClientName(conn net.Conn) (string, error) {
 	hellomsg := peng()
 	conn.Write(hellomsg)
@@ -55,7 +55,7 @@ func isnameexist(name string) bool {
 }
 
 func validname(name string) bool {
-	if len(name) == 0 || len(name) > 20 {
+	if len(name) > 20 {
 		return false
 	}
 	for _, i := range name {
@@ -88,7 +88,7 @@ func changeClientName(conn net.Conn) (string, error) {
 		}
 		if !bool2 {
 			conn.Write([]byte("this is not valid name.\n"))
-			conn.Write([]byte("[ENTER YOUR NAME]:"))
+			conn.Write([]byte("[ENTER YOUR NEW NAME]:"))
 			continue
 		}
 
@@ -103,10 +103,6 @@ func changeClientName(conn net.Conn) (string, error) {
 }
 
 func Isvalidmessage(msg string) bool {
-	/* if len(msg) < 0 {
-		return false
-	} */
-
 	for _, i := range msg {
 		if i < 32 || i > 126 {
 			return false

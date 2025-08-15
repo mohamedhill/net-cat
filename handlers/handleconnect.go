@@ -8,14 +8,14 @@ import (
 	"sync"
 	"time"
 )
-
+// Declaring global variables
 var (
 	clients    = make(map[net.Conn]string)
 	clientsMu  sync.Mutex
 	messageLog []string
 	logMu      sync.Mutex
 )
-
+// the main function to handle connections(Name,Limit,prompt,broadcast, connect and disconnect...)
 func HandleConnection(conn net.Conn) {
 	defer conn.Close()
 	disconnect := false
@@ -47,8 +47,6 @@ func HandleConnection(conn net.Conn) {
 	disconnect = true
 	logs(joinMsg + "\n")
 
-	//fmt.Println(time.Now().Format("2006-01-02 15:04:05"), "✅ User connected:", name)
-
 	reader := bufio.NewReader(conn)
 
 	flag := true
@@ -59,8 +57,6 @@ func HandleConnection(conn net.Conn) {
 		}
 		message, err := reader.ReadString('\n')
 		if err != nil {
-			//fmt.Printf("🔴 Client %s disconnected: %v\n", name, err)
-
 			clientsMu.Lock()
 			delete(clients, conn)
 			clientsMu.Unlock()
@@ -76,7 +72,7 @@ func HandleConnection(conn net.Conn) {
 		message = strings.TrimSpace(message)
 
 		if message == "/name" {
-			correntname := name
+			currentname := name
 			newname, err := changeClientName(conn)
 			if err != nil {
 				fmt.Println("Invalid name. Disconnecting client.")
@@ -86,7 +82,7 @@ func HandleConnection(conn net.Conn) {
 			clients[conn] = newname
 			clientsMu.Unlock()
 			name = newname
-			changenameMsg := fmt.Sprintf("📝%s has change there name to: %s", correntname, newname)
+			changenameMsg := fmt.Sprintf("📝%s has change there name to: %s", currentname, newname)
 			broadcast(changenameMsg, conn, disconnect)
 			propmt()
 			disconnect = true

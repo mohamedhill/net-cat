@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// a function to broadcast(send) messages to other users
 func broadcast(message string, excludeConn net.Conn, flg bool) {
 	clientsMu.Lock()
 	defer clientsMu.Unlock()
@@ -23,6 +24,7 @@ func broadcast(message string, excludeConn net.Conn, flg bool) {
 	}
 }
 
+// a function to send the propmt to users
 func propmt() {
 	clientsMu.Lock()
 	defer clientsMu.Unlock()
