@@ -4,14 +4,20 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"netc/handlers"
-	
+	"strconv"
+
+	netc "netc/handlers"
 )
 
 func main() {
-	address := ":8989"
+	address := ":8989" // default port
 	if len(os.Args) == 2 {
-		address = ":" + os.Args[1]
+		newadress, err := strconv.Atoi(os.Args[1])
+		if err != nil || newadress < 1024 || newadress > 65000 {	//checking the validity of the port 1024>=port<=65000
+			fmt.Println("check the validity of the port")
+			return
+		}
+		address = ":" + strconv.Itoa(newadress)
 	} else if len(os.Args) > 2 {
 		fmt.Println("[USAGE]: ./TCPChat $port")
 		return
